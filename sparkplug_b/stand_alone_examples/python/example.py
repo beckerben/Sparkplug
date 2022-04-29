@@ -13,7 +13,7 @@
 
 import sys
 sys.path.insert(0, "../../../client_libraries/python/")
-#print(sys.path)
+print(sys.path)
 
 import paho.mqtt.client as mqtt
 import sparkplug_b as sparkplug
@@ -24,9 +24,9 @@ import string
 from sparkplug_b import *
 
 # Application Variables
-serverUrl = "localhost"
-myGroupId = "Sparkplug B Devices"
-myNodeName = "Python Edge Node 1"
+serverUrl = "becker14.local"
+myGroupId = "BECKER"
+myNodeName = "BECKER20"
 myDeviceName = "Emulated Device"
 publishPeriod = 5000
 myUsername = "admin"
@@ -46,6 +46,7 @@ class AliasMap:
     Device_Metric2 = 10
     Device_Metric3 = 11
     My_Custom_Motor = 12
+    Becker_metric = 13
 
 ######################################################################
 # The callback for when the client receives a CONNACK response from the server.
@@ -82,7 +83,7 @@ def on_message(client, userdata, msg):
                 # disconnect from the current MQTT server and connect to the next MQTT server in the
                 # list of available servers.  This is used for clients that have a pool of MQTT servers
                 # to connect to.
-		print "'Node Control/Next Server' is not implemented in this example"
+                print("Node Control/Next Server' is not implemented in this example")
             elif metric.name == "Node Control/Rebirth" or metric.alias == AliasMap.Rebirth:
                 # 'Node Control/Rebirth' is an NCMD used to tell the device/client application to resend
                 # its full NBIRTH and DBIRTH again.  MQTT Engine will send this NCMD to a device/client
@@ -104,7 +105,7 @@ def on_message(client, userdata, msg):
 
                 # We know this is an Int16 because of how we declated it in the DBIRTH
                 newValue = metric.int_value
-                print "CMD message for output/Device Metric2 - New Value: {}".format(newValue)
+                #print("CMD message for output/Device Metric2 - New Value: {}".format(newValue))
 
                 # Create the DDATA payload - Use the alias because this isn't the DBIRTH
                 payload = sparkplug.getDdataPayload()
@@ -121,7 +122,7 @@ def on_message(client, userdata, msg):
 
                 # We know this is an Boolean because of how we declated it in the DBIRTH
                 newValue = metric.boolean_value
-                print "CMD message for output/Device Metric3 - New Value: %r" % newValue
+                #print "CMD message for output/Device Metric3 - New Value: %r" % newValue
 
                 # Create the DDATA payload - use the alias because this isn't the DBIRTH
                 payload = sparkplug.getDdataPayload()
@@ -131,11 +132,11 @@ def on_message(client, userdata, msg):
                 byteArray = bytearray(payload.SerializeToString())
                 client.publish("spBv1.0/" + myGroupId + "/DDATA/" + myNodeName + "/" + myDeviceName, byteArray, 0, False)
             else:
-                print "Unknown command: " + metric.name
+                print ("Unknown command: " + metric.name)
     else:
-        print "Unknown command..."
+        print ("Unknown command...")
 
-    print "Done publishing"
+    print ("Done publishing")
 ######################################################################
 
 ######################################################################
@@ -150,7 +151,7 @@ def publishBirth():
 # Publish the NBIRTH certificate
 ######################################################################
 def publishNodeBirth():
-    print "Publishing Node Birth"
+    print ("Publishing Node Birth")
 
     # Create the node birth payload
     payload = sparkplug.getNodeBirthPayload()
@@ -159,6 +160,7 @@ def publishNodeBirth():
     addMetric(payload, "Node Control/Next Server", AliasMap.Next_Server, MetricDataType.Boolean, False)
     addMetric(payload, "Node Control/Rebirth", AliasMap.Rebirth, MetricDataType.Boolean, False)
     addMetric(payload, "Node Control/Reboot", AliasMap.Reboot, MetricDataType.Boolean, False)
+    
 
     # Add some regular node metrics
     addMetric(payload, "Node Metric0", AliasMap.Node_Metric0, MetricDataType.String, "hello node")
@@ -209,7 +211,7 @@ def publishNodeBirth():
 # Publish the DBIRTH certificate
 ######################################################################
 def publishDeviceBirth():
-    print "Publishing Device Birth"
+    print("Publishing Device Birth")
 
     # Get the payload
     payload = sparkplug.getDeviceBirthPayload()
@@ -219,6 +221,7 @@ def publishDeviceBirth():
     addMetric(payload, "input/Device Metric1", AliasMap.Device_Metric1, MetricDataType.Boolean, True)
     addMetric(payload, "output/Device Metric2", AliasMap.Device_Metric2, MetricDataType.Int16, 16)
     addMetric(payload, "output/Device Metric3", AliasMap.Device_Metric3, MetricDataType.Boolean, True)
+    addNullMetric(payload, "becker/Becker_Metric", AliasMap.Becker_metric, MetricDataType.Int32)
 
     # Create the UDT definition value which includes two UDT members and a single parameter and add it to the payload
     template = initTemplateMetric(payload, "My_Custom_Motor", AliasMap.My_Custom_Motor, "Custom_Motor")
@@ -237,7 +240,7 @@ def publishDeviceBirth():
 ######################################################################
 # Main Application
 ######################################################################
-print "Starting main application"
+print("Starting main application")
 
 # Create the node death payload
 deathPayload = sparkplug.getNodeDeathPayload()
@@ -263,7 +266,8 @@ while True:
     payload = sparkplug.getDdataPayload()
 
     # Add some random data to the inputs
-    addMetric(payload, None, AliasMap.Device_Metric0, MetricDataType.String, ''.join(random.choice(string.lowercase) for i in range(12)))
+    addMetric(payload, None, AliasMap.Device_Metric0, MetricDataType.String, ''.join(random.choice(string.ascii_lowercase) for i in range(12)))
+    addNullMetric(payload,None, AliasMap.Becker_metric, MetricDataType.Int32)
 
     # Note this data we're setting to STALE via the propertyset as an example
     metric = addMetric(payload, None, AliasMap.Device_Metric1, MetricDataType.Boolean, random.choice([True, False]))
